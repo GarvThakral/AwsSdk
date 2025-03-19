@@ -2,7 +2,7 @@
 #include <curl/curl.h>
 #include <iostream>
 #include <ctime>
-
+#include <unordered_map>
 
 using namespace std;
 
@@ -45,7 +45,30 @@ void UriEncodeCanonicalQueryString(string fullUrl){
     for(int i = queryStringStartIndex;i<fullUrl.size() ; i++){
         queryValue += fullUrl[i];
     }
-    cout << queryValue << '\n';    
+
+
+    unordered_map<string, string> keyValMap; 
+
+    string key;
+    string value;
+    for(int i = 0 ; i < queryValue.size() ; i++){
+        //prefix=somePrefix&marker=someMarker&max-keys=20
+        if(queryValue[i] == '='){
+            i++;
+            while(queryValue[i]!='&' && i!=queryValue.size()){
+                value += queryValue[i];                
+                i++;
+            }
+            keyValMap[key] = value;
+            cout << key << "\n";
+            cout << value << "\n";
+            key = "";
+            value = "";
+        }else{
+            key += queryValue[i];
+        }
+    }
+
 }
 
 string canonicalRequest(string httpMethod , string canonicalURI , string canonicalQueryString , string canonicalHeaders)  {
@@ -105,7 +128,7 @@ int main() {
     // // set option
     // cout << "Curl initialised";
     // calculate_auth_header("new","new","new");
-    UriEncodeCanonicalURI("http://s3.amazonaws.com/examplebucket/myphoto.jpg");
+    // UriEncodeCanonicalURI("http://s3.amazonaws.com/examplebucket/myphoto.jpg");
     UriEncodeCanonicalQueryString("http://s3.amazonaws.com/examplebucket?prefix=somePrefix&marker=someMarker&max-keys=20");
     return 0;
 }
