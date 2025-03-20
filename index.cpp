@@ -3,8 +3,79 @@
 #include <iostream>
 #include <ctime>
 #include <unordered_map>
+#include <sstream>
+#include <cryptopp/cryptlib.h>
+#include <cryptopp/sha.h>
+#include <cryptopp/hex.h>
+#include <cryptopp/filters.h>
+
 
 using namespace std;
+
+string sha256(const string& input) {
+    CryptoPP::SHA256 hash;
+    std::string digest;
+
+    CryptoPP::StringSource s(input, true,
+        new CryptoPP::HashFilter(hash,
+            new CryptoPP::HexEncoder(
+                new CryptoPP::StringSink(digest)
+            )
+        )
+    );
+    return digest;
+}
+
+string LowerCase(string val){
+    
+    for (auto& x : val) { 
+        x = tolower(x); 
+    } 
+    
+    return val;
+}
+
+string Trim(string toTrim){
+    string newString;
+    int i = 0, j = toTrim.size()-1;
+    if(toTrim[0] == ' '){
+        while(toTrim[i] == ' '){
+            i++;
+        }
+    }
+    if(toTrim[toTrim.size()-1] == ' '){        
+        while(toTrim[j] == ' '){
+            j--;
+        }
+    }
+    for(int k = i ; k <= j ; k++){
+        newString += toTrim[k];
+    }
+
+    return newString ;
+}
+
+void UriEncode(string toEncode){
+    string final ;
+    for(int i = 0 ; i < toEncode.size() ; i++){
+        if((toEncode[i] >= 'a' && toEncode[i] <= 'z') || (toEncode[i] >= 'A' && toEncode[i] <= 'Z')){
+            final += toEncode[i];
+            continue;
+        }else if(toEncode[i] >= '0' && toEncode[i] <= '9'){
+            final += toEncode[i];
+            continue;
+        }else{
+            int splChar = toEncode[i];
+            stringstream ss;
+            ss << hex << uppercase  << splChar;
+            string hexVal = ss.str();
+            string conCat = "%" + hexVal; 
+            final += conCat;
+
+        }
+    }
+    cout << final ;
+}
 
 void UriEncodeCanonicalURI(string fullUrl){
     int uriStartIndex;
@@ -60,14 +131,13 @@ void UriEncodeCanonicalQueryString(string fullUrl){
                 i++;
             }
             keyValMap[key] = value;
-            cout << key << "\n";
-            cout << value << "\n";
             key = "";
-            value = "";
+            value="";
         }else{
             key += queryValue[i];
         }
     }
+    for (auto& [key, value]: keyValMap) {  std::cout << key << " " << value << endl; }
 
 }
 
@@ -129,6 +199,8 @@ int main() {
     // cout << "Curl initialised";
     // calculate_auth_header("new","new","new");
     // UriEncodeCanonicalURI("http://s3.amazonaws.com/examplebucket/myphoto.jpg");
-    UriEncodeCanonicalQueryString("http://s3.amazonaws.com/examplebucket?prefix=somePrefix&marker=someMarker&max-keys=20");
+    // UriEncodeCanonicalQueryString("http://s3.amazonaws.com/examplebucket?prefix=somePrefix&marker=someMarker&max-keys=20");
+    string newString = sha256("Garvisthebest");
+    cout << newString;
     return 0;
 }
