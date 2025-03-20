@@ -3,14 +3,34 @@
 #include <iostream>
 #include <ctime>
 #include <unordered_map>
+#include <map>
 #include <sstream>
 #include <cryptopp/cryptlib.h>
 #include <cryptopp/sha.h>
+#include <cryptopp/hmac.h>
+#include <cryptopp/sha.h>
 #include <cryptopp/hex.h>
+#include <cryptopp/secblock.h>
 #include <cryptopp/filters.h>
-
-
 using namespace std;
+using namespace CryptoPP;
+
+string hmac_sha256(const string& key, const string& message) {
+    string mac;
+    SecByteBlock keyBlock(reinterpret_cast<const CryptoPP::byte*>(key.data()), key.size());
+
+    HMAC<SHA256> hmac(keyBlock, keyBlock.size());
+    
+    StringSource(message, true,
+        new HashFilter(hmac,
+            new HexEncoder(
+                new StringSink(mac)
+            )
+        )
+    );
+
+    return mac;
+}
 
 string sha256(const string& input) {
     CryptoPP::SHA256 hash;
@@ -77,7 +97,17 @@ void UriEncode(string toEncode){
     cout << final ;
 }
 
-void UriEncodeCanonicalURI(string fullUrl){
+string canocialHeaders(unordered_map<string,string> allHeaders){
+    string canocialHeadersString;
+    for(auto& [key, value]:allHeaders){
+        string final = LowerCase(key)+ ':' + Trim(value) + '\n';
+        canocialHeadersString += final;
+    }
+    return canocialHeadersString;
+}
+
+
+string UriEncodeCanonicalURI(string fullUrl){
     int uriStartIndex;
     for(int i = 0 ; i < fullUrl.size() ; i++){
         if(fullUrl[i] == '.' && fullUrl[i+1] == 'c' && fullUrl[i+2] == 'o' && fullUrl[i+3] == 'm'){
@@ -94,9 +124,9 @@ void UriEncodeCanonicalURI(string fullUrl){
         }
     }
     cout << uriValue << '\n';
-    
+    return uriValue;
 }
-void UriEncodeCanonicalQueryString(string fullUrl){
+string UriEncodeCanonicalQueryString(string fullUrl){
     int uriStartIndex;
     for(int i = 0 ; i < fullUrl.size() ; i++){
         if(fullUrl[i] == '.' && fullUrl[i+1] == 'c' && fullUrl[i+2] == 'o' && fullUrl[i+3] == 'm'){
@@ -138,10 +168,14 @@ void UriEncodeCanonicalQueryString(string fullUrl){
         }
     }
     for (auto& [key, value]: keyValMap) {  std::cout << key << " " << value << endl; }
-
+    return "making";
 }
 
-string canonicalRequest(string httpMethod , string canonicalURI , string canonicalQueryString , string canonicalHeaders)  {
+string canonicalRequest(string httpMethod , string fullUrl)  {
+    string canocialURI = UriEncodeCanonicalURI(fullUrl);
+    string canocialQueryString = UriEncodeCanonicalQueryString(fullUrl);
+    string canocialString = httpMethod + '\n' + canocialString;
+    
     return "0";
 }
 
@@ -202,5 +236,10 @@ int main() {
     // UriEncodeCanonicalQueryString("http://s3.amazonaws.com/examplebucket?prefix=somePrefix&marker=someMarker&max-keys=20");
     string newString = sha256("Garvisthebest");
     cout << newString;
+    map<string,string> newMap;
+    newMap["garv"] = "thakral";
+    newMap["garv1"] = "thakral1";
+    newMap["garv0"] = "thakral0";
+    for(auto& [key , value]:newMap){cout << key << " " << value};
     return 0;
 }
