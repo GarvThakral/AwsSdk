@@ -1,1 +1,1 @@
-g++ index.cpp -o index   -I"C:/Windows/System32/vcpkg/installed/x64-mingw-dynamic/include"   -L"C:/Windows/System32/vcpkg/installed/x64-mingw-dynamic/lib"   -lcryptopp -lcurl
+g++ index.cpp -o index   -I"C:/Windows/System32/vcpkg/installed/x64-mingw-dynamic/include"   -L"C:/Windows/System32/vcpkg/installed/x64-mingw-dynamic/lib"   -lcryptopp -lcurl && ./index

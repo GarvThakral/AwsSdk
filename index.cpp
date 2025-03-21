@@ -15,6 +15,14 @@
 using namespace std;
 using namespace CryptoPP;
 
+string getDateFormat(){
+    time_t currentTime = time(nullptr);
+    tm* timeInfo = localtime(&currentTime);
+    char buffer[11];
+    strftime(buffer, sizeof(buffer), "%Y%m%d", timeInfo);
+    return buffer;
+}
+
 string hmac_sha256(const string& key, const string& message) {
     string mac;
     SecByteBlock keyBlock(reinterpret_cast<const CryptoPP::byte*>(key.data()), key.size());
@@ -32,11 +40,11 @@ string hmac_sha256(const string& key, const string& message) {
     return mac;
 }
 
-string sha256(const string& input) {
+string sha256(string payload) {
     CryptoPP::SHA256 hash;
     std::string digest;
 
-    CryptoPP::StringSource s(input, true,
+    CryptoPP::StringSource s(payload, true,
         new CryptoPP::HashFilter(hash,
             new CryptoPP::HexEncoder(
                 new CryptoPP::StringSink(digest)
@@ -97,13 +105,26 @@ void UriEncode(string toEncode){
     cout << final ;
 }
 
-string canocialHeaders(unordered_map<string,string> allHeaders){
+string canocialHeaders(map<string,string> allHeaders){
     string canocialHeadersString;
     for(auto& [key, value]:allHeaders){
         string final = LowerCase(key)+ ':' + Trim(value) + '\n';
         canocialHeadersString += final;
     }
     return canocialHeadersString;
+}
+string SignedHeaders(map<string,string> allHeaders){
+    string signedHeadersString;
+    for(auto& [key, value]:allHeaders){
+        string final = LowerCase(key)+ ';';
+        signedHeadersString += final;
+    }
+    return signedHeadersString;
+}
+
+string calculateScope(string region , string service){
+    string scopeString = getDateFormat() + "/" + region + "/" + service + "/aws4_request";
+    return scopeString;
 }
 
 
@@ -120,13 +141,13 @@ string UriEncodeCanonicalURI(string fullUrl){
         uriValue += fullUrl[i];
         if(fullUrl[i] == '?'){
             cout << uriValue;
-            return;
+            break;
         }
     }
     cout << uriValue << '\n';
     return uriValue;
 }
-string UriEncodeCanonicalQueryString(string fullUrl){
+map<string,string> UriEncodeCanonicalQueryString(string fullUrl){
     int uriStartIndex;
     for(int i = 0 ; i < fullUrl.size() ; i++){
         if(fullUrl[i] == '.' && fullUrl[i+1] == 'c' && fullUrl[i+2] == 'o' && fullUrl[i+3] == 'm'){
@@ -148,7 +169,7 @@ string UriEncodeCanonicalQueryString(string fullUrl){
     }
 
 
-    unordered_map<string, string> keyValMap; 
+    map<string, string> keyValMap; 
 
     string key;
     string value;
@@ -168,12 +189,12 @@ string UriEncodeCanonicalQueryString(string fullUrl){
         }
     }
     for (auto& [key, value]: keyValMap) {  std::cout << key << " " << value << endl; }
-    return "making";
+    return keyValMap;
 }
 
 string canonicalRequest(string httpMethod , string fullUrl)  {
     string canocialURI = UriEncodeCanonicalURI(fullUrl);
-    string canocialQueryString = UriEncodeCanonicalQueryString(fullUrl);
+    map<string,string> canocialQueryString = UriEncodeCanonicalQueryString(fullUrl);
     string canocialString = httpMethod + '\n' + canocialString;
     
     return "0";
@@ -187,13 +208,7 @@ size_t got_data(char *buffer, size_t itemsize, size_t nitems, void* ignorethis) 
     return bytes;
 }
 
-string getDateFormat(){
-    time_t currentTime = time(nullptr);
-    tm* timeInfo = localtime(&currentTime);
-    char buffer[11];
-    strftime(buffer, sizeof(buffer), "%Y%m%d", timeInfo);
-    return buffer;
-}
+
 
 string getIsoTime(){
     time_t now;
@@ -204,15 +219,24 @@ string getIsoTime(){
     return buf;
 }
 
-void signSignature(string scope){
+void signSignature(string scope , string hashedCanocialRequest){
     string timeStamp = getIsoTime();
-    string signString = "AWS4-HMAC-SHA256" + '\n' + timeStamp + '\n' + scope + '\n' ; //+hex(sha256hash(canocial request))
+    string signString = "AWS4-HMAC-SHA256\n" + timeStamp + "\n" + scope + "\n" + hashedCanocialRequest; //+hex(sha256hash(canocial request))
 }
 
 void calculate_auth_header(string access_key_id , string region , string service){
     string year = getDateFormat();
     string authString = access_key_id + "/" + year + "/" + region + "/" + service + "/" + "aws4_request";
-    signSignature("cyx");
+    signSignature("cyx","xyz");
+}
+
+string calculateSignature(string secretAccessKey , string region , string service , string stringToSign){
+    string DateKey = hmac_sha256("AWS4" + secretAccessKey , getDateFormat());
+    string DateRegionKey = hmac_sha256(DateKey, region);
+    string DateRegionServiceKey = hmac_sha256(DateRegionKey , service);
+    string SigningKey = hmac_sha256(DateRegionServiceKey,"aws4_request");
+    string FinalSignature = hmac_sha256(SigningKey,stringToSign);
+    return FinalSignature;
 }
 
 int main() {
@@ -234,12 +258,13 @@ int main() {
     // calculate_auth_header("new","new","new");
     // UriEncodeCanonicalURI("http://s3.amazonaws.com/examplebucket/myphoto.jpg");
     // UriEncodeCanonicalQueryString("http://s3.amazonaws.com/examplebucket?prefix=somePrefix&marker=someMarker&max-keys=20");
-    string newString = sha256("Garvisthebest");
-    cout << newString;
-    map<string,string> newMap;
-    newMap["garv"] = "thakral";
-    newMap["garv1"] = "thakral1";
-    newMap["garv0"] = "thakral0";
-    for(auto& [key , value]:newMap){cout << key << " " << value};
+    // string newString = sha256("Garvisthebest");
+    // cout << newString;
+    // map<string,string> canocialHeadersMap;
+    // canocialHeadersMap["host"] = "amazon.com";
+    // canocialHeadersMap["password"] = "garv123";
+    // canocialHeadersMap["id"] = "garv";
+    string newString = calculateScope("thisisscope" , "thisisHash");
+    cout <<newString;
     return 0;
 }
